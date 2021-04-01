@@ -1,0 +1,164 @@
+---
+title: 'Respiratory Viruses'
+output: word_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = NA)
+
+knitr::opts_chunk$set(
+    comment = "",
+    echo = F,
+    fig.width = 12, 
+    fig.height = 10,
+    message = FALSE,
+    warning = FALSE,
+    tidy.opts = list(
+        keep.blank.line = TRUE,
+        width.cutoff = 150
+        ),
+    options(width = 150),
+    eval = TRUE
+)
+
+#this chunk is used to silence code, warnings, comments and hash from appearing in output
+
+# useful links 
+# r - Split long gtsummary() table to n smaller tables - Stack Overflow
+# https://stackoverflow.com/questions/66119997/split-long-gtsummary-table-to-n-smaller-tables
+
+```
+
+
+```{r import and cleaning}
+library(tidyverse)
+library(readxl)
+library(gtsummary)
+library(labelled)
+
+data <- read_excel("R.viral screening-final-EXCELED-3.21.xlsx")
+names(data) <- make.names(names(data), unique = T)
+
+
+```
+
+```{r functions}
+
+rmdtbl <- function(df){
+  
+  tbl_alpha <- autofit(theme_vanilla(flextable(df)))
+  
+  tbl_alpha <- bg(tbl_alpha, bg = "blue", part = "header")
+  tbl_alpha <- color(tbl_alpha, color = "white", part = "header")
+  
+  
+  bes <- align(tbl_alpha, align = "center")
+  
+  bes <- align_text_col(bes, align = "center")
+  return(bes)
+}
+```
+
+
+```{r cleaning}
+
+data$pre.transplant.R..viral.screening <-   fct_collapse(data$pre.transplant.R..viral.screening, 
+Negative = "negative", 
+other_level = "Positive")
+
+data$Recipient.s.Gender. <- fct_collapse(data$Recipient.s.Gender., 
+                                         Male = "Male", 
+                                         other_level = "Female")
+
+data$Stem.cell.source <- tolower(data$Stem.cell.source)
+
+data <- data %>% 
+  mutate_if(is.character, list(~na_if(., "_"))) # converting "_" into NA
+
+data$type.of.R.viruses.if....ve..AdV <- fct_collapse(data$type.of.R.viruses.if....ve..AdV,
+                                                     AdV = "Adv")
+```
+
+# Patients characteristics
+
+```{r table1}
+
+var_label(data) <- list(
+pre.transplant.R..viral.screening = "Viral screening", 
+Recipient.s.Gender. = "Recipient gender", 
+Underlying.malignancy = "Diagnosis", 
+Stem.cell.source = "stem cell source", 
+conditioning.Regimen = "conditioning regimen", 
+Pre.transplant.chest.morbidity = "chest morbidity",
+GVHD.ppx..CSA.MTX = "GVHD prophylaxis[CSA+MTX]", 
+initial.neutrophils.count.on.admission. = "Neutrophil count", 
+Initial.lymphocytes.count.on.admission. = "Lymphocyte count", 
+T.cell.subset.CD19.interpretation. = "CD19 count", 
+T.cell.subset.CD3.interpretation. = "CD3 count", 
+T.cell.subset.CD56..CD16.interpretation. = "CD56 + CD16 counts", 
+type.of.R.viruses.if....ve.HRV = "HRV", 
+type.of.R.viruses.if....ve..AdV = "AdV",
+type.of.R.viruses.if....ve..others = "Other viruses")
+
+tbl1 <- data %>% 
+  dplyr::select(pre.transplant.R..viral.screening, Recipient.s.Gender., Stem.cell.source, conditioning.Regimen,
+                Pre.transplant.chest.morbidity, GVHD.ppx..CSA.MTX, initial.neutrophils.count.on.admission., Initial.lymphocytes.count.on.admission., T.cell.subset.CD19.interpretation., T.cell.subset.CD3.interpretation., 
+T.cell.subset.CD56..CD16.interpretation.)
+
+tbl_summary(tbl1, by = pre.transplant.R..viral.screening, missing = "no", sort = list(everything() ~ "frequency")) %>% add_p() %>% add_overall()  %>% bold_labels() %>% italicize_levels() %>% bold_p() %>% gtsummary::as_flex_table() 
+
+```
+
+Table1 patients' characteristics grouped by pre-transplant viral screening
+\n
+
+N.B.
+chest morbidity is pre-transplant \n
+counts are on admission 
+
+# Types of viruses
+
+
+```{r}
+data <- data %>% 
+  unite("viruses", type.of.R.viruses.if....ve.HRV : type.of.R.viruses.if....ve..others, sep = "/", remove = FALSE, na.rm = T)
+
+data$viruses[data$viruses == ""] <- NA
+
+tbl2 <- data %>% 
+  dplyr::select(viruses)
+
+tbl_summary(tbl2, missing = "no", sort = list(everything() ~ "frequency"), percent = "cell")  %>% add_n() %>% bold_labels() %>% italicize_levels() %>% gtsummary::as_flex_table() 
+
+```
+Table 2 Types of viruses
+
+N.B. AdV in this case means patients that had only AdV positive test. 
+
+
+# Types of viruses after grouping 
+
+```{r table 3}
+
+data$other_viruses <- ifelse(is.na(data$type.of.R.viruses.if....ve..others), "no", "yes")
+data$type.of.R.viruses.if....ve.HRV <- ifelse(is.na(data$type.of.R.viruses.if....ve.HRV), "no", "yes")
+data$type.of.R.viruses.if....ve..AdV <- ifelse(is.na(data$type.of.R.viruses.if....ve..AdV), "no", "yes")
+
+var_label(data) <- list(
+type.of.R.viruses.if....ve.HRV = "HRV", 
+type.of.R.viruses.if....ve..AdV = "AdV",
+type.of.R.viruses.if....ve..others = "Other viruses")
+
+
+tbl3 <- data %>% 
+  dplyr::select(type.of.R.viruses.if....ve..AdV,  type.of.R.viruses.if....ve.HRV, 
+                other_viruses)
+
+tbl_summary(tbl3, missing = "no", sort = list(everything() ~ "frequency")) %>% bold_labels() %>% italicize_levels() %>% gtsummary::as_flex_table() 
+
+```
+
+Table 3: Number of patients having AdV or HRV, regardless of other concomitant viruses. 
+
