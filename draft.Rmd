@@ -44,6 +44,8 @@ names(data) <- make.names(names(data), unique = T)
 
 ```
 
+
+
 ```{r functions}
 
 rmdtbl <- function(df){
@@ -79,6 +81,9 @@ data <- data %>%
 
 data$type.of.R.viruses.if....ve..AdV <- fct_collapse(data$type.of.R.viruses.if....ve..AdV,
                                                      AdV = "Adv")
+
+data$Age <- (data$Date.of.Stem.Cell.Infusion. - data$Recipient.s.Birth.Date.)/365.25 
+
 ```
 
 # Patients characteristics
@@ -88,7 +93,8 @@ data$type.of.R.viruses.if....ve..AdV <- fct_collapse(data$type.of.R.viruses.if..
 var_label(data) <- list(
 pre.transplant.R..viral.screening = "Viral screening", 
 Recipient.s.Gender. = "Recipient gender", 
-Underlying.malignancy = "Diagnosis", 
+Underlying.malignancy = "Diagnosis",
+Type.of.transplant = "Donor type",
 Stem.cell.source = "stem cell source", 
 conditioning.Regimen = "conditioning regimen", 
 Pre.transplant.chest.morbidity = "chest morbidity",
@@ -103,7 +109,7 @@ type.of.R.viruses.if....ve..AdV = "AdV",
 type.of.R.viruses.if....ve..others = "Other viruses")
 
 tbl1 <- data %>% 
-  dplyr::select(pre.transplant.R..viral.screening, Recipient.s.Gender., Stem.cell.source, conditioning.Regimen,
+  dplyr::select(pre.transplant.R..viral.screening, Recipient.s.Gender., Age, Type.of.transplant, Stem.cell.source, conditioning.Regimen,
                 Pre.transplant.chest.morbidity, GVHD.ppx..CSA.MTX, initial.neutrophils.count.on.admission., Initial.lymphocytes.count.on.admission., T.cell.subset.CD19.interpretation., T.cell.subset.CD3.interpretation., 
 T.cell.subset.CD56..CD16.interpretation.)
 
